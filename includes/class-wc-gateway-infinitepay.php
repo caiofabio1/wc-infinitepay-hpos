@@ -378,6 +378,34 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     }
 
     /**
+     * Redacts sensitive data from the payload for logging.
+     *
+     * @param array $payload The payload to redact.
+     * @return array The redacted payload.
+     */
+    private function redact_payload( array $payload ): array {
+        $redacted = $payload;
+
+        if ( isset( $redacted['customer'] ) ) {
+            foreach ( array( 'name', 'email', 'phone_number' ) as $field ) {
+                if ( isset( $redacted['customer'][ $field ] ) ) {
+                    $redacted['customer'][ $field ] = '***';
+                }
+            }
+        }
+
+        if ( isset( $redacted['address'] ) ) {
+            foreach ( array( 'cep', 'number', 'complement' ) as $field ) {
+                if ( isset( $redacted['address'][ $field ] ) ) {
+                    $redacted['address'][ $field ] = '***';
+                }
+            }
+        }
+
+        return $redacted;
+    }
+
+    /**
      * Cria checkout link na API com retry inteligente.
      *
      * Tenta até API_MAX_RETRIES vezes com backoff progressivo.
@@ -455,7 +483,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
         try {
             $payload = $this->build_payload( $order );
-            $this->log( 'Payload pedido #' . $order_id . ': ' . wp_json_encode( $payload ) );
+            $this->log( 'Payload pedido #' . $order_id . ': ' . wp_json_encode( $this->redact_payload( $payload ) ) );
 
             $url = $this->create_checkout_link( $payload );
             if ( is_wp_error( $url ) ) {
