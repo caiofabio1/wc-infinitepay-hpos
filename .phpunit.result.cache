@@ -1,0 +1,1 @@
+{"version":1,"defects":[],"times":{"Test_WC_Gateway_InfinitePay::test_process_payment_success":0.012,"Test_WC_Gateway_InfinitePay::test_process_payment_order_not_found":0.001,"Test_WC_Gateway_InfinitePay::test_process_payment_api_error":0.001,"Test_WC_Gateway_InfinitePay::test_process_payment_wp_error":1.001}}
