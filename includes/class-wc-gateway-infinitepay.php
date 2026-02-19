@@ -21,6 +21,11 @@ defined( 'ABSPATH' ) || exit;
 class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
     /**
+     * ID do gateway.
+     */
+    const ID = 'infinitepay_hpos';
+
+    /**
      * Endpoints da API InfinitePay.
      */
     const API_LINKS        = 'https://api.infinitepay.io/invoices/public/checkout/links';
@@ -57,7 +62,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
      * Construtor.
      */
     public function __construct() {
-        $this->id                 = 'infinitepay_hpos';
+        $this->id                 = self::ID;
         $this->method_title       = __( 'InfinitePay (HPOS)', 'wc-infinitepay-hpos' );
         $this->method_description = __( 'Aceite Cartão e Pix via InfinitePay com checkout seguro, webhook REST e compatibilidade HPOS.', 'wc-infinitepay-hpos' );
         $this->has_fields         = false;
@@ -89,7 +94,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
      * Exibe aviso no admin quando o webhook secret não está configurado.
      */
     public function admin_notice_missing_secret(): void {
-        $settings_url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=infinitepay_hpos' );
+        $settings_url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=' . self::ID );
         printf(
             '<div class="notice notice-warning is-dismissible"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
             esc_html__( 'InfinitePay:', 'wc-infinitepay-hpos' ),
@@ -578,7 +583,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         }
 
         // Valida que o pedido pertence a este gateway.
-        if ( 'infinitepay_hpos' !== $order->get_payment_method() ) {
+        if ( self::ID !== $order->get_payment_method() ) {
             return;
         }
 

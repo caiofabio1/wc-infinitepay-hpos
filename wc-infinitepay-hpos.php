@@ -94,7 +94,7 @@ add_action( 'woocommerce_blocks_loaded', function () {
  * Link de configurações na lista de plugins.
  */
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), function ( $links ) {
-    $url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=infinitepay_hpos' );
+    $url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=' . WC_Gateway_InfinitePay_HPOS::ID );
     array_unshift( $links, sprintf( '<a href="%s">%s</a>', esc_url( $url ), __( 'Configurações', 'wc-infinitepay-hpos' ) ) );
     return $links;
 } );
