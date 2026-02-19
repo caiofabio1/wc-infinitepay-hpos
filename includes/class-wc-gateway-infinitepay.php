@@ -462,7 +462,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                 throw new \Exception( $url->get_error_message() );
             }
 
-            $order->update_status( 'on-hold', __( 'Aguardando pagamento InfinitePay.', 'wc-infinitepay-hpos' ) );
+            $order->set_status( 'on-hold', __( 'Aguardando pagamento InfinitePay.', 'wc-infinitepay-hpos' ) );
             $order->update_meta_data( '_infinitepay_handle', $this->handle );
             $order->update_meta_data( '_infinitepay_pending', 'yes' );
             $order->update_meta_data( '_infinitepay_checkout_url', esc_url_raw( $url ) );
@@ -597,10 +597,11 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         set_transient( $cache_key, $result, 5 * MINUTE_IN_SECONDS );
 
         if ( $result['paid'] ) {
-            $order->payment_complete( $tx );
             $order->delete_meta_data( '_infinitepay_pending' );
             $order->update_meta_data( '_infinitepay_slug', $slug );
-            $order->save();
+            if ( ! $order->payment_complete( $tx ) ) {
+                $order->save();
+            }
             $this->log( 'Pagamento confirmado via thankyou para pedido #' . $order->get_id() );
         }
 

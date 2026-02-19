@@ -205,7 +205,6 @@ class InfinitePay_Webhook {
         }
 
         // Confirma pagamento.
-        $order->payment_complete( $tx );
         $order->update_meta_data( '_infinitepay_slug', $slug );
         $order->delete_meta_data( '_infinitepay_pending' );
 
@@ -220,7 +219,10 @@ class InfinitePay_Webhook {
                 $tx
             )
         );
-        $order->save();
+
+        if ( ! $order->payment_complete( $tx ) ) {
+            $order->save();
+        }
 
         $gateway->log( 'Webhook: pedido #' . $order_nsu . ' confirmado. TX: ' . $tx );
 
