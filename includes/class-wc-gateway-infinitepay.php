@@ -86,7 +86,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         printf(
             '<div class="notice notice-warning is-dismissible"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
             esc_html__( 'InfinitePay:', 'wc-infinitepay-hpos' ),
-            esc_html__( 'O Webhook Secret não está configurado. Sem ele, qualquer requisição pode confirmar pedidos. Configure para proteger sua loja.', 'wc-infinitepay-hpos' ),
+            esc_html__( 'O Webhook Secret não está configurado. Webhooks de pagamento serão ignorados até que você configure o secret para proteger sua loja.', 'wc-infinitepay-hpos' ),
             esc_url( $settings_url ),
             esc_html__( 'Configurar agora', 'wc-infinitepay-hpos' )
         );
