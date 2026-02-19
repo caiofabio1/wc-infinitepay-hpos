@@ -1,0 +1,13 @@
+{
+    "name": "infinitepay/wc-infinitepay-hpos",
+    "description": "WooCommerce InfinitePay Gateway HPOS",
+    "type": "wordpress-plugin",
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "classmap": [
+            "includes/"
+        ]
+    }
+}

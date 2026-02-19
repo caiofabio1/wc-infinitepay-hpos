@@ -126,7 +126,11 @@ Response: `{ "success": true, "paid": true }` or `{ "success": false, "paid": fa
 
 ## Testing Notes
 
-- No automated tests exist yet. Manual testing requires an InfinitePay account.
+- **Automated Tests**: Unit tests are located in the `tests/` directory.
+- **Running Tests**:
+  1. Install dependencies: `composer install`
+  2. Run PHPUnit: `./vendor/bin/phpunit`
+- Manual testing requires an InfinitePay account.
 - The InfinitePay API is public (no auth tokens for checkout links), authenticated only by the merchant `handle`.
 - Webhook testing can be done with tools like `curl` or Postman sending POST to the webhook URL.
 - For local development, use a tunnel (ngrok, Cloudflare Tunnel) so InfinitePay can reach the webhook.
