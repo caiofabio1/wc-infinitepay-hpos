@@ -17,7 +17,12 @@
     const { getSetting }            = window.wc.wcSettings;
     const el                        = window.wp.element.createElement;
 
-    const settings = getSetting( 'infinitepay_hpos_data', {} );
+    // Gateway ID injected from PHP via wp_localize_script (fallback for safety).
+    const gatewayId = ( window.infinitepayBlocksConfig && window.infinitepayBlocksConfig.gatewayId )
+        ? window.infinitepayBlocksConfig.gatewayId
+        : 'infinitepay_hpos';
+
+    const settings = getSetting( gatewayId + '_data', {} );
     const title    = decodeEntities( settings.title || 'Cartão/Pix (InfinitePay)' );
     const description = decodeEntities(
         settings.description || 'Pague com segurança via InfinitePay.'
@@ -39,7 +44,7 @@
     };
 
     registerPaymentMethod( {
-        name: 'infinitepay_hpos',
+        name: gatewayId,
         label: el( Label, null ),
         ariaLabel: title,
         content: el( Content, null ),
@@ -47,7 +52,7 @@
         canMakePayment: function () {
             return true;
         },
-        paymentMethodId: 'infinitepay_hpos',
+        paymentMethodId: gatewayId,
         supports: {
             features: settings.supports || [ 'products' ],
         },

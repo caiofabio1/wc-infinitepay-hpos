@@ -68,7 +68,7 @@ class InfinitePay_Webhook {
         $received = $request->get_header( 'X-Webhook-Secret' );
         if ( ! $received ) {
             $auth = $request->get_header( 'Authorization' );
-            if ( $auth && str_starts_with( $auth, 'Bearer ' ) ) {
+            if ( $auth && 0 === strpos( $auth, 'Bearer ' ) ) {
                 $received = substr( $auth, 7 );
             }
         }
@@ -211,7 +211,7 @@ class InfinitePay_Webhook {
         }
 
         // Confirma pagamento.
-        $order->payment_complete( $tx );
+        // Define metadados ANTES de payment_complete(), pois ele chama save() internamente.
         $order->update_meta_data( '_infinitepay_slug', $slug );
         $order->delete_meta_data( '_infinitepay_pending' );
 
@@ -226,7 +226,9 @@ class InfinitePay_Webhook {
                 $tx
             )
         );
-        $order->save();
+
+        // payment_complete() chama save() internamente, dispensando save() explícito.
+        $order->payment_complete( $tx );
 
         $gateway->log( 'Webhook: pedido #' . $order_nsu . ' confirmado. TX: ' . $tx );
 

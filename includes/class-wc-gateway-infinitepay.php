@@ -224,7 +224,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         if ( ! $digits ) {
             return '';
         }
-        if ( str_starts_with( $digits, '55' ) ) {
+        if ( 0 === strpos( $digits, '55' ) ) {
             return '+' . $digits;
         }
         return '+55' . $digits;
@@ -648,7 +648,9 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         }
 
         // 2. Tenta verificar via API se temos os parâmetros.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Dados públicos da URL de redirect da InfinitePay, validados pela API.
         $tx   = isset( $_GET['transaction_nsu'] ) ? sanitize_text_field( wp_unslash( $_GET['transaction_nsu'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $slug = isset( $_GET['slug'] ) ? sanitize_text_field( wp_unslash( $_GET['slug'] ) ) : '';
 
         if ( $tx && $slug ) {

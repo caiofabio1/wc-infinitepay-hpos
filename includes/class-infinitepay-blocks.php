@@ -61,6 +61,10 @@ final class InfinitePay_Blocks_Integration extends AbstractPaymentMethodType {
             true
         );
 
+        wp_localize_script( 'wc-infinitepay-blocks', 'infinitepayBlocksConfig', array(
+            'gatewayId' => WC_Gateway_InfinitePay_HPOS::ID,
+        ) );
+
         return array( 'wc-infinitepay-blocks' );
     }
 

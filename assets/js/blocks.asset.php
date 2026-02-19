@@ -12,5 +12,5 @@ return array(
         'wc-blocks-registry',
         'wc-settings',
     ),
-    'version'      => '5.0.0',
+    'version'      => defined( 'INFINITEPAY_WC_VERSION' ) ? INFINITEPAY_WC_VERSION : '5.0.0',
 );
