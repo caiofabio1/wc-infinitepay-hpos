@@ -47,6 +47,13 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     public string $webhook_secret = '';
 
     /**
+     * Logger instance.
+     *
+     * @var WC_Logger|null
+     */
+    private $logger;
+
+    /**
      * Construtor.
      */
     public function __construct() {
@@ -188,7 +195,12 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         if ( ! $this->debug ) {
             return;
         }
-        wc_get_logger()->log( $level, $message, array( 'source' => 'infinitepay-hpos' ) );
+
+        if ( is_null( $this->logger ) ) {
+            $this->logger = wc_get_logger();
+        }
+
+        $this->logger->log( $level, $message, array( 'source' => 'infinitepay-hpos' ) );
     }
 
     /**
