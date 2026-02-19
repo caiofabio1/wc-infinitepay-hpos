@@ -300,6 +300,43 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     }
 
     /**
+     * Monta os dados de endereço para o payload.
+     *
+     * @param WC_Order $order Pedido.
+     * @return array
+     */
+    private function build_address_payload( WC_Order $order ): array {
+        if ( ! $this->send_address ) {
+            return array();
+        }
+
+        $cep    = preg_replace( '/\D+/', '', (string) $order->get_billing_postcode() );
+        $number = $order->get_meta( '_billing_number' );
+
+        if ( ! $number ) {
+            $a1 = (string) $order->get_billing_address_1();
+            if ( preg_match( '/\b(\d{1,6})\b/', $a1, $m ) ) {
+                $number = $m[1];
+            }
+        }
+
+        $complement = (string) $order->get_billing_address_2();
+        $address    = array();
+
+        if ( 8 === strlen( $cep ) ) {
+            $address['cep'] = $cep;
+        }
+        if ( $number ) {
+            $address['number'] = (string) $number;
+        }
+        if ( $complement ) {
+            $address['complement'] = $complement;
+        }
+
+        return $address;
+    }
+
+    /**
      * Monta o payload para a API de checkout links.
      *
      * @param WC_Order $order Pedido.
@@ -338,32 +375,9 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         }
 
         // Endereço.
-        if ( $this->send_address ) {
-            $cep    = preg_replace( '/\D+/', '', (string) $order->get_billing_postcode() );
-            $number = $order->get_meta( '_billing_number' );
-
-            if ( ! $number ) {
-                $a1 = (string) $order->get_billing_address_1();
-                if ( preg_match( '/\b(\d{1,6})\b/', $a1, $m ) ) {
-                    $number = $m[1];
-                }
-            }
-
-            $complement = (string) $order->get_billing_address_2();
-            $address    = array();
-
-            if ( 8 === strlen( $cep ) ) {
-                $address['cep'] = $cep;
-            }
-            if ( $number ) {
-                $address['number'] = (string) $number;
-            }
-            if ( $complement ) {
-                $address['complement'] = $complement;
-            }
-            if ( ! empty( $address ) ) {
-                $payload['address'] = $address;
-            }
+        $address = $this->build_address_payload( $order );
+        if ( ! empty( $address ) ) {
+            $payload['address'] = $address;
         }
 
         /**
