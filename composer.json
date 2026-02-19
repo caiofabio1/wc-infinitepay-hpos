@@ -1,0 +1,14 @@
+{
+    "name": "infinitepay/woocommerce-infinitepay-hpos",
+    "description": "InfinitePay Payment Gateway for WooCommerce",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    },
+    "autoload": {
+        "classmap": [
+            "includes/"
+        ]
+    }
+}
