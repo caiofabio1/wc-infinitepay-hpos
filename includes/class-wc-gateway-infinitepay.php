@@ -1,4 +1,6 @@
 <?php
+declare( strict_types=1 );
+
 /**
  * Gateway de pagamento InfinitePay para WooCommerce.
  *
