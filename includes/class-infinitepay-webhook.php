@@ -18,10 +18,16 @@ defined( 'ABSPATH' ) || exit;
 class InfinitePay_Webhook {
 
     /**
+     * Namespace da API REST.
+     * @var string
+     */
+    const REST_NAMESPACE = 'wc-infinitepay/v1';
+
+    /**
      * Registra a rota REST do webhook.
      */
     public static function register_routes(): void {
-        register_rest_route( 'wc-infinitepay/v1', '/webhook', array(
+        register_rest_route( self::REST_NAMESPACE, '/webhook', array(
             'methods'             => 'POST',
             'callback'            => array( __CLASS__, 'handle' ),
             'permission_callback' => '__return_true',
