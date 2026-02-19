@@ -23,3 +23,5 @@ composer.lock
 
 # Translation compiled files (keep .pot source)
 languages/*.mo
+.phpunit.result.cache
+.phpunit.cache/
