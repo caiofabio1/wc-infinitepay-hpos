@@ -96,7 +96,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
      * Campos de configuração no admin.
      */
     public function init_form_fields() {
-        $webhook_url = rest_url( 'wc-infinitepay/v1/webhook' );
+        $webhook_url = rest_url( InfinitePay_Webhook::REST_NAMESPACE . '/webhook' );
 
         $this->form_fields = array(
             'enabled'         => array(
@@ -312,7 +312,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
             'handle'       => $this->handle,
             'order_nsu'    => $order_id,
             'redirect_url' => $this->get_return_url( $order ),
-            'webhook_url'  => rest_url( 'wc-infinitepay/v1/webhook' ),
+            'webhook_url'  => rest_url( InfinitePay_Webhook::REST_NAMESPACE . '/webhook' ),
             'items'        => $this->build_items( $order ),
         );
 
