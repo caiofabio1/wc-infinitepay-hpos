@@ -215,27 +215,68 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
      * @return array
      */
     private function build_items( WC_Order $order ): array {
-        $order_id    = (string) $order->get_id();
         $total_cents = (int) round( ( (float) $order->get_total() ) * 100 );
 
         // Se send_items desabilitado, envia consolidado.
         if ( ! $this->send_items ) {
-            return array(
-                array(
-                    'quantity'    => 1,
-                    'price'       => $total_cents,
-                    'description' => sprintf(
-                        /* translators: %s: order ID */
-                        __( 'Pedido #%s', 'wc-infinitepay-hpos' ),
-                        $order_id
-                    ),
-                ),
-            );
+            return $this->get_consolidated_item( $order, $total_cents );
         }
 
-        $items         = array();
-        $items_total   = 0;
+        $items = array_merge(
+            $this->get_product_items( $order ),
+            $this->get_shipping_item( $order ),
+            $this->get_fee_items( $order )
+        );
 
+        // Recalcula o total dos itens.
+        $items_total = 0;
+        foreach ( $items as $item ) {
+            $items_total += $item['price'] * $item['quantity'];
+        }
+
+        // Ajuste de arredondamento: diferença entre total e soma dos itens.
+        $diff = $total_cents - $items_total;
+        if ( 0 !== $diff && ! empty( $items ) ) {
+            $items[ count( $items ) - 1 ]['price'] += $diff;
+        }
+
+        // Fallback: se nenhum item, consolidar.
+        if ( empty( $items ) ) {
+            return $this->get_consolidated_item( $order, $total_cents );
+        }
+
+        return $items;
+    }
+
+    /**
+     * Retorna item único consolidado.
+     *
+     * @param WC_Order $order       Pedido.
+     * @param int      $total_cents Total em centavos.
+     * @return array
+     */
+    private function get_consolidated_item( WC_Order $order, int $total_cents ): array {
+        return array(
+            array(
+                'quantity'    => 1,
+                'price'       => $total_cents,
+                'description' => sprintf(
+                    /* translators: %s: order ID */
+                    __( 'Pedido #%s', 'wc-infinitepay-hpos' ),
+                    $order->get_id()
+                ),
+            ),
+        );
+    }
+
+    /**
+     * Retorna itens de produto.
+     *
+     * @param WC_Order $order Pedido.
+     * @return array
+     */
+    private function get_product_items( WC_Order $order ): array {
+        $items = array();
         foreach ( $order->get_items() as $item ) {
             $quantity   = max( 1, (int) $item->get_quantity() );
             $line_total = (int) round( ( (float) $item->get_total() ) * 100 );
@@ -246,23 +287,38 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                 'price'       => $unit_price,
                 'description' => mb_substr( $item->get_name(), 0, 200 ),
             );
-
-            $items_total += $unit_price * $quantity;
         }
+        return $items;
+    }
 
-        // Frete como item separado.
+    /**
+     * Retorna item de frete.
+     *
+     * @param WC_Order $order Pedido.
+     * @return array
+     */
+    private function get_shipping_item( WC_Order $order ): array {
         $shipping_total = (int) round( ( (float) $order->get_shipping_total() ) * 100 );
         if ( $shipping_total > 0 ) {
-            $items[] = array(
-                'quantity'    => 1,
-                'price'       => $shipping_total,
-                'description' => __( 'Frete', 'wc-infinitepay-hpos' ),
+            return array(
+                array(
+                    'quantity'    => 1,
+                    'price'       => $shipping_total,
+                    'description' => __( 'Frete', 'wc-infinitepay-hpos' ),
+                ),
             );
-            $items_total += $shipping_total;
         }
+        return array();
+    }
 
-        // Taxas adicionais.
-        $fee_total = 0;
+    /**
+     * Retorna itens de taxas.
+     *
+     * @param WC_Order $order Pedido.
+     * @return array
+     */
+    private function get_fee_items( WC_Order $order ): array {
+        $items = array();
         foreach ( $order->get_fees() as $fee ) {
             $fee_amount = (int) round( ( (float) $fee->get_total() ) * 100 );
             if ( 0 !== $fee_amount ) {
@@ -271,31 +327,8 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                     'price'       => $fee_amount,
                     'description' => mb_substr( $fee->get_name(), 0, 200 ),
                 );
-                $fee_total += $fee_amount;
             }
         }
-
-        $items_total += $fee_total;
-
-        // Ajuste de arredondamento: diferença entre total e soma dos itens.
-        $diff = $total_cents - $items_total;
-        if ( 0 !== $diff && ! empty( $items ) ) {
-            $items[ count( $items ) - 1 ]['price'] += $diff;
-        }
-
-        // Fallback: se nenhum item, consolidar.
-        if ( empty( $items ) ) {
-            $items[] = array(
-                'quantity'    => 1,
-                'price'       => $total_cents,
-                'description' => sprintf(
-                    /* translators: %s: order ID */
-                    __( 'Pedido #%s', 'wc-infinitepay-hpos' ),
-                    $order_id
-                ),
-            );
-        }
-
         return $items;
     }
 
