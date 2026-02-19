@@ -18,6 +18,16 @@ defined( 'ABSPATH' ) || exit;
 class InfinitePay_Webhook {
 
     /**
+     * Limite máximo de requisições por intervalo.
+     */
+    const RATE_LIMIT_MAX_REQUESTS = 30;
+
+    /**
+     * Intervalo de rate limit (em segundos).
+     */
+    const RATE_LIMIT_INTERVAL = MINUTE_IN_SECONDS;
+
+    /**
      * Registra a rota REST do webhook.
      */
     public static function register_routes(): void {
@@ -77,7 +87,7 @@ class InfinitePay_Webhook {
     /**
      * Rate limiting simples por IP via transient.
      *
-     * Limita a 30 requests por minuto por IP.
+     * Limita a RATE_LIMIT_MAX_REQUESTS requests por RATE_LIMIT_INTERVAL.
      *
      * @return bool true se dentro do limite.
      */
@@ -86,11 +96,11 @@ class InfinitePay_Webhook {
         $key = 'ip_wh_rl_' . md5( $ip );
         $count = (int) get_transient( $key );
 
-        if ( $count >= 30 ) {
+        if ( $count >= self::RATE_LIMIT_MAX_REQUESTS ) {
             return false;
         }
 
-        set_transient( $key, $count + 1, MINUTE_IN_SECONDS );
+        set_transient( $key, $count + 1, self::RATE_LIMIT_INTERVAL );
         return true;
     }
 
