@@ -23,7 +23,7 @@ final class InfinitePay_Blocks_Integration extends AbstractPaymentMethodType {
      *
      * @var string
      */
-    protected $name = 'infinitepay_hpos';
+    protected $name = WC_Gateway_InfinitePay_HPOS::ID;
 
     /**
      * Inicializa as configurações.

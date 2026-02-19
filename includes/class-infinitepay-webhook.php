@@ -35,7 +35,7 @@ class InfinitePay_Webhook {
      */
     private static function get_gateway(): ?WC_Gateway_InfinitePay_HPOS {
         $gateways = WC()->payment_gateways()->payment_gateways();
-        return $gateways['infinitepay_hpos'] ?? null;
+        return $gateways[ WC_Gateway_InfinitePay_HPOS::ID ] ?? null;
     }
 
     /**
@@ -120,7 +120,7 @@ class InfinitePay_Webhook {
      */
     private static function validate_order_ownership( WC_Order $order ): bool {
         // Verifica se o método de pagamento é o nosso.
-        if ( 'infinitepay_hpos' !== $order->get_payment_method() ) {
+        if ( WC_Gateway_InfinitePay_HPOS::ID !== $order->get_payment_method() ) {
             return false;
         }
 
