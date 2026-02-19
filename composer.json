@@ -1,0 +1,7 @@
+{
+    "name": "infinitepay/woocommerce-hpos",
+    "description": "InfinitePay WooCommerce Payment Gateway",
+    "require-dev": {
+        "phpunit/phpunit": "^9.6"
+    }
+}
