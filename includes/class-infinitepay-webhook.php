@@ -144,12 +144,26 @@ class InfinitePay_Webhook {
     public static function handle( WP_REST_Request $request ): WP_REST_Response {
         $gateway = self::get_gateway();
 
-        // Rate limit.
-        if ( ! self::check_rate_limit() ) {
-            if ( $gateway ) {
-                $gateway->log( 'Webhook bloqueado: rate limit excedido.', 'warning' );
+        $bypass_rate_limit = false;
+        $is_valid_secret   = false;
+
+        // Tenta validar autenticação antecipadamente para evitar rate limiting em tráfego legítimo (Shared IPs).
+        if ( $gateway ) {
+            $is_valid_secret = self::validate_secret( $request, $gateway );
+            // Só pulamos o rate limit se houver um segredo configurado E ele for válido.
+            if ( ! empty( $gateway->webhook_secret ) && $is_valid_secret ) {
+                $bypass_rate_limit = true;
             }
-            return new WP_REST_Response( array( 'success' => false, 'error' => 'rate_limit' ), 429 );
+        }
+
+        // Rate limit: aplica se não for confiável (ou se gateway não existir).
+        if ( ! $bypass_rate_limit ) {
+            if ( ! self::check_rate_limit() ) {
+                if ( $gateway ) {
+                    $gateway->log( 'Webhook bloqueado: rate limit excedido.', 'warning' );
+                }
+                return new WP_REST_Response( array( 'success' => false, 'error' => 'rate_limit' ), 429 );
+            }
         }
 
         if ( ! $gateway ) {
@@ -157,7 +171,7 @@ class InfinitePay_Webhook {
         }
 
         // Validação do secret.
-        if ( ! self::validate_secret( $request, $gateway ) ) {
+        if ( ! $is_valid_secret ) {
             $gateway->log( 'Webhook rejeitado: secret inválido.', 'error' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'unauthorized' ), 401 );
         }
