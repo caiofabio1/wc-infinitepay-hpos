@@ -80,8 +80,8 @@ final class InfinitePay_Blocks_Integration extends AbstractPaymentMethodType {
      */
     public function get_payment_method_data(): array {
         return array(
-            'title'       => $this->get_setting( 'title' ) ?? __( 'Cartão/Pix (InfinitePay)', 'wc-infinitepay-hpos' ),
-            'description' => $this->get_setting( 'description' ) ?? __( 'Pague com segurança via InfinitePay.', 'wc-infinitepay-hpos' ),
+            'title'       => $this->get_setting( 'title' ) ?? __( 'Cartão/Pix (InfinitePay)', INFINITEPAY_TEXT_DOMAIN ),
+            'description' => $this->get_setting( 'description' ) ?? __( 'Pague com segurança via InfinitePay.', INFINITEPAY_TEXT_DOMAIN ),
             'supports'    => array( 'products' ),
         );
     }

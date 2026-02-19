@@ -51,16 +51,16 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
      */
     public function __construct() {
         $this->id                 = 'infinitepay_hpos';
-        $this->method_title       = __( 'InfinitePay (HPOS)', 'wc-infinitepay-hpos' );
-        $this->method_description = __( 'Aceite Cartão e Pix via InfinitePay com checkout seguro, webhook REST e compatibilidade HPOS.', 'wc-infinitepay-hpos' );
+        $this->method_title       = __( 'InfinitePay (HPOS)', INFINITEPAY_TEXT_DOMAIN );
+        $this->method_description = __( 'Aceite Cartão e Pix via InfinitePay com checkout seguro, webhook REST e compatibilidade HPOS.', INFINITEPAY_TEXT_DOMAIN );
         $this->has_fields         = false;
         $this->supports           = array( 'products' );
 
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->title          = $this->get_option( 'title', __( 'Cartão/Pix (InfinitePay)', 'wc-infinitepay-hpos' ) );
-        $this->description    = $this->get_option( 'description', __( 'Pague com segurança via InfinitePay.', 'wc-infinitepay-hpos' ) );
+        $this->title          = $this->get_option( 'title', __( 'Cartão/Pix (InfinitePay)', INFINITEPAY_TEXT_DOMAIN ) );
+        $this->description    = $this->get_option( 'description', __( 'Pague com segurança via InfinitePay.', INFINITEPAY_TEXT_DOMAIN ) );
         $this->enabled        = $this->get_option( 'enabled', 'no' );
         $this->handle         = sanitize_text_field( $this->get_option( 'handle', '' ) );
         $this->debug          = 'yes' === $this->get_option( 'debug', 'no' );
@@ -85,10 +85,10 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         $settings_url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=infinitepay_hpos' );
         printf(
             '<div class="notice notice-warning is-dismissible"><p><strong>%s</strong> %s <a href="%s">%s</a></p></div>',
-            esc_html__( 'InfinitePay:', 'wc-infinitepay-hpos' ),
-            esc_html__( 'O Webhook Secret não está configurado. Sem ele, qualquer requisição pode confirmar pedidos. Configure para proteger sua loja.', 'wc-infinitepay-hpos' ),
+            esc_html__( 'InfinitePay:', INFINITEPAY_TEXT_DOMAIN ),
+            esc_html__( 'O Webhook Secret não está configurado. Sem ele, qualquer requisição pode confirmar pedidos. Configure para proteger sua loja.', INFINITEPAY_TEXT_DOMAIN ),
             esc_url( $settings_url ),
-            esc_html__( 'Configurar agora', 'wc-infinitepay-hpos' )
+            esc_html__( 'Configurar agora', INFINITEPAY_TEXT_DOMAIN )
         );
     }
 
@@ -100,66 +100,66 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
         $this->form_fields = array(
             'enabled'         => array(
-                'title'   => __( 'Ativar/Desativar', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Ativar/Desativar', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'checkbox',
-                'label'   => __( 'Ativar InfinitePay', 'wc-infinitepay-hpos' ),
+                'label'   => __( 'Ativar InfinitePay', INFINITEPAY_TEXT_DOMAIN ),
                 'default' => 'no',
             ),
             'title'           => array(
-                'title'   => __( 'Título', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Título', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'text',
-                'default' => __( 'Cartão/Pix (InfinitePay)', 'wc-infinitepay-hpos' ),
+                'default' => __( 'Cartão/Pix (InfinitePay)', INFINITEPAY_TEXT_DOMAIN ),
                 'desc_tip' => true,
-                'description' => __( 'Nome exibido para o cliente no checkout.', 'wc-infinitepay-hpos' ),
+                'description' => __( 'Nome exibido para o cliente no checkout.', INFINITEPAY_TEXT_DOMAIN ),
             ),
             'description'     => array(
-                'title'   => __( 'Descrição', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Descrição', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'textarea',
-                'default' => __( 'Pague com segurança via InfinitePay.', 'wc-infinitepay-hpos' ),
+                'default' => __( 'Pague com segurança via InfinitePay.', INFINITEPAY_TEXT_DOMAIN ),
             ),
             'handle'          => array(
-                'title'       => __( 'Handle (InfiniteTag)', 'wc-infinitepay-hpos' ),
+                'title'       => __( 'Handle (InfiniteTag)', INFINITEPAY_TEXT_DOMAIN ),
                 'type'        => 'text',
-                'description' => __( 'Seu identificador InfinitePay (sem $). Encontre no app InfinitePay > Configurações > Link integrado.', 'wc-infinitepay-hpos' ),
+                'description' => __( 'Seu identificador InfinitePay (sem $). Encontre no app InfinitePay > Configurações > Link integrado.', INFINITEPAY_TEXT_DOMAIN ),
                 'default'     => '',
             ),
             'send_customer'   => array(
-                'title'   => __( 'Enviar dados do cliente', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Enviar dados do cliente', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'checkbox',
-                'label'   => __( 'Enviar nome, email e telefone para o checkout InfinitePay', 'wc-infinitepay-hpos' ),
+                'label'   => __( 'Enviar nome, email e telefone para o checkout InfinitePay', INFINITEPAY_TEXT_DOMAIN ),
                 'default' => 'yes',
             ),
             'send_address'    => array(
-                'title'   => __( 'Enviar endereço', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Enviar endereço', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'checkbox',
-                'label'   => __( 'Enviar CEP, número e complemento para o checkout InfinitePay', 'wc-infinitepay-hpos' ),
+                'label'   => __( 'Enviar CEP, número e complemento para o checkout InfinitePay', INFINITEPAY_TEXT_DOMAIN ),
                 'default' => 'yes',
             ),
             'send_items'      => array(
-                'title'   => __( 'Itens detalhados', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Itens detalhados', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'checkbox',
-                'label'   => __( 'Enviar nome e quantidade de cada produto (em vez de valor total consolidado)', 'wc-infinitepay-hpos' ),
+                'label'   => __( 'Enviar nome e quantidade de cada produto (em vez de valor total consolidado)', INFINITEPAY_TEXT_DOMAIN ),
                 'default' => 'yes',
             ),
             'webhook_secret'  => array(
-                'title'       => __( 'Webhook Secret', 'wc-infinitepay-hpos' ),
+                'title'       => __( 'Webhook Secret', INFINITEPAY_TEXT_DOMAIN ),
                 'type'        => 'password',
-                'description' => __( 'Chave secreta para validar webhooks. Configure a mesma no painel InfinitePay. Altamente recomendado para segurança.', 'wc-infinitepay-hpos' ),
+                'description' => __( 'Chave secreta para validar webhooks. Configure a mesma no painel InfinitePay. Altamente recomendado para segurança.', INFINITEPAY_TEXT_DOMAIN ),
                 'default'     => '',
                 'desc_tip'    => true,
             ),
             'debug'           => array(
-                'title'   => __( 'Debug', 'wc-infinitepay-hpos' ),
+                'title'   => __( 'Debug', INFINITEPAY_TEXT_DOMAIN ),
                 'type'    => 'checkbox',
-                'label'   => __( 'Registrar logs em WooCommerce > Status > Logs', 'wc-infinitepay-hpos' ),
+                'label'   => __( 'Registrar logs em WooCommerce > Status > Logs', INFINITEPAY_TEXT_DOMAIN ),
                 'default' => 'no',
             ),
             '_webhook_help'   => array(
-                'title'       => __( 'Webhook URL', 'wc-infinitepay-hpos' ),
+                'title'       => __( 'Webhook URL', INFINITEPAY_TEXT_DOMAIN ),
                 'type'        => 'title',
                 'description' => sprintf(
                     /* translators: %s: webhook URL */
-                    __( 'Configure esta URL no painel InfinitePay como destino do webhook:<br><code>%s</code>', 'wc-infinitepay-hpos' ),
+                    __( 'Configure esta URL no painel InfinitePay como destino do webhook:<br><code>%s</code>', INFINITEPAY_TEXT_DOMAIN ),
                     esc_html( $webhook_url )
                 ),
             ),
@@ -226,7 +226,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                     'price'       => $total_cents,
                     'description' => sprintf(
                         /* translators: %s: order ID */
-                        __( 'Pedido #%s', 'wc-infinitepay-hpos' ),
+                        __( 'Pedido #%s', INFINITEPAY_TEXT_DOMAIN ),
                         $order_id
                     ),
                 ),
@@ -256,7 +256,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
             $items[] = array(
                 'quantity'    => 1,
                 'price'       => $shipping_total,
-                'description' => __( 'Frete', 'wc-infinitepay-hpos' ),
+                'description' => __( 'Frete', INFINITEPAY_TEXT_DOMAIN ),
             );
             $items_total += $shipping_total;
         }
@@ -290,7 +290,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                 'price'       => $total_cents,
                 'description' => sprintf(
                     /* translators: %s: order ID */
-                    __( 'Pedido #%s', 'wc-infinitepay-hpos' ),
+                    __( 'Pedido #%s', INFINITEPAY_TEXT_DOMAIN ),
                     $order_id
                 ),
             );
@@ -430,14 +430,14 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
             $data = json_decode( $body, true );
             if ( ! is_array( $data ) || empty( $data['url'] ) ) {
                 $this->log( 'Resposta inesperada: ' . $body, 'error' );
-                return new WP_Error( 'bad_response', __( 'URL de checkout não retornada pela API.', 'wc-infinitepay-hpos' ) );
+                return new WP_Error( 'bad_response', __( 'URL de checkout não retornada pela API.', INFINITEPAY_TEXT_DOMAIN ) );
             }
 
             $this->log( 'Checkout link criado com sucesso na tentativa ' . $attempt );
             return $data['url'];
         }
 
-        return $last_error ?? new WP_Error( 'unknown', __( 'Falha ao criar link de pagamento.', 'wc-infinitepay-hpos' ) );
+        return $last_error ?? new WP_Error( 'unknown', __( 'Falha ao criar link de pagamento.', INFINITEPAY_TEXT_DOMAIN ) );
     }
 
     /**
@@ -449,7 +449,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     public function process_payment( $order_id ) {
         $order = wc_get_order( $order_id );
         if ( ! $order ) {
-            wc_add_notice( __( 'Pedido não encontrado.', 'wc-infinitepay-hpos' ), 'error' );
+            wc_add_notice( __( 'Pedido não encontrado.', INFINITEPAY_TEXT_DOMAIN ), 'error' );
             return array( 'result' => 'failure' );
         }
 
@@ -462,7 +462,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                 throw new \Exception( $url->get_error_message() );
             }
 
-            $order->update_status( 'on-hold', __( 'Aguardando pagamento InfinitePay.', 'wc-infinitepay-hpos' ) );
+            $order->update_status( 'on-hold', __( 'Aguardando pagamento InfinitePay.', INFINITEPAY_TEXT_DOMAIN ) );
             $order->update_meta_data( '_infinitepay_handle', $this->handle );
             $order->update_meta_data( '_infinitepay_pending', 'yes' );
             $order->update_meta_data( '_infinitepay_checkout_url', esc_url_raw( $url ) );
@@ -491,12 +491,12 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
             $order->add_order_note(
                 sprintf(
                     /* translators: %s: error message */
-                    __( 'Erro InfinitePay: %s', 'wc-infinitepay-hpos' ),
+                    __( 'Erro InfinitePay: %s', INFINITEPAY_TEXT_DOMAIN ),
                     $e->getMessage()
                 )
             );
             wc_add_notice(
-                __( 'Erro ao processar pagamento. Tente novamente.', 'wc-infinitepay-hpos' ),
+                __( 'Erro ao processar pagamento. Tente novamente.', INFINITEPAY_TEXT_DOMAIN ),
                 'error'
             );
             return array( 'result' => 'failure' );
@@ -517,7 +517,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     public function process_refund( $order_id, $amount = null, $reason = '' ) {
         return new WP_Error(
             'infinitepay_no_refund_api',
-            __( 'Reembolsos automáticos não são suportados pela InfinitePay. Processe o reembolso manualmente no painel InfinitePay e marque como reembolsado aqui.', 'wc-infinitepay-hpos' )
+            __( 'Reembolsos automáticos não são suportados pela InfinitePay. Processe o reembolso manualmente no painel InfinitePay e marque como reembolsado aqui.', INFINITEPAY_TEXT_DOMAIN )
         );
     }
 
@@ -545,7 +545,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         // 1. Já confirmado pelo webhook? Não precisa chamar API.
         if ( 'yes' !== $order->get_meta( '_infinitepay_pending' ) ) {
             echo '<div class="woocommerce-message"><strong>';
-            echo esc_html__( 'Pagamento confirmado!', 'wc-infinitepay-hpos' );
+            echo esc_html__( 'Pagamento confirmado!', INFINITEPAY_TEXT_DOMAIN );
             echo '</strong></div>';
             return;
         }
@@ -559,7 +559,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
             if ( $result['paid'] ) {
                 echo '<div class="woocommerce-message"><strong>';
-                echo esc_html__( 'Pagamento confirmado!', 'wc-infinitepay-hpos' );
+                echo esc_html__( 'Pagamento confirmado!', INFINITEPAY_TEXT_DOMAIN );
                 echo '</strong></div>';
                 return;
             }
@@ -567,7 +567,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
         // 3. Ainda pendente — aguardando webhook.
         echo '<div class="woocommerce-info"><p>';
-        echo esc_html__( 'Confirmando pagamento... Você receberá um email quando confirmado.', 'wc-infinitepay-hpos' );
+        echo esc_html__( 'Confirmando pagamento... Você receberá um email quando confirmado.', INFINITEPAY_TEXT_DOMAIN );
         echo '</p></div>';
     }
 

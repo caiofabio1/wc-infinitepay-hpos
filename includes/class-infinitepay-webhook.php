@@ -216,7 +216,7 @@ class InfinitePay_Webhook {
         $order->add_order_note(
             sprintf(
                 /* translators: %s: transaction NSU */
-                __( 'Pagamento confirmado via webhook. Transação: %s', 'wc-infinitepay-hpos' ),
+                __( 'Pagamento confirmado via webhook. Transação: %s', INFINITEPAY_TEXT_DOMAIN ),
                 $tx
             )
         );

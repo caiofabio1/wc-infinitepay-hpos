@@ -23,6 +23,7 @@ defined( 'ABSPATH' ) || exit;
 define( 'INFINITEPAY_WC_VERSION', '5.0.0' );
 define( 'INFINITEPAY_WC_FILE', __FILE__ );
 define( 'INFINITEPAY_WC_PATH', plugin_dir_path( __FILE__ ) );
+define( 'INFINITEPAY_TEXT_DOMAIN', 'wc-infinitepay-hpos' );
 
 /**
  * Declara compatibilidade com HPOS e Cart/Checkout Blocks.
@@ -52,8 +53,8 @@ function infinitepay_wc_init() {
         add_action( 'admin_notices', function () {
             printf(
                 '<div class="notice notice-error"><p><strong>%s</strong> %s</p></div>',
-                esc_html__( 'InfinitePay:', 'wc-infinitepay-hpos' ),
-                esc_html__( 'Este plugin requer o WooCommerce ativo.', 'wc-infinitepay-hpos' )
+                esc_html__( 'InfinitePay:', INFINITEPAY_TEXT_DOMAIN ),
+                esc_html__( 'Este plugin requer o WooCommerce ativo.', INFINITEPAY_TEXT_DOMAIN )
             );
         } );
         return;
@@ -95,7 +96,7 @@ add_action( 'woocommerce_blocks_loaded', function () {
  */
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), function ( $links ) {
     $url = admin_url( 'admin.php?page=wc-settings&tab=checkout&section=infinitepay_hpos' );
-    array_unshift( $links, sprintf( '<a href="%s">%s</a>', esc_url( $url ), __( 'Configurações', 'wc-infinitepay-hpos' ) ) );
+    array_unshift( $links, sprintf( '<a href="%s">%s</a>', esc_url( $url ), __( 'Configurações', INFINITEPAY_TEXT_DOMAIN ) ) );
     return $links;
 } );
 
@@ -103,5 +104,5 @@ add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), function ( $li
  * Carrega traduções do plugin.
  */
 add_action( 'init', function () {
-    load_plugin_textdomain( 'wc-infinitepay-hpos', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+    load_plugin_textdomain( INFINITEPAY_TEXT_DOMAIN, false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
 } );
