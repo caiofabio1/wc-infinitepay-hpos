@@ -37,6 +37,11 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     const API_MAX_RETRIES = 2;
 
     /**
+     * Tamanho máximo da descrição do item.
+     */
+    const MAX_DESCRIPTION_LENGTH = 200;
+
+    /**
      * Propriedades declaradas para PHP 8.2+.
      */
     public string $handle         = '';
@@ -244,7 +249,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
             $items[] = array(
                 'quantity'    => $quantity,
                 'price'       => $unit_price,
-                'description' => mb_substr( $item->get_name(), 0, 200 ),
+                'description' => mb_substr( $item->get_name(), 0, self::MAX_DESCRIPTION_LENGTH ),
             );
 
             $items_total += $unit_price * $quantity;
@@ -269,7 +274,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                 $items[] = array(
                     'quantity'    => 1,
                     'price'       => $fee_amount,
-                    'description' => mb_substr( $fee->get_name(), 0, 200 ),
+                    'description' => mb_substr( $fee->get_name(), 0, self::MAX_DESCRIPTION_LENGTH ),
                 );
                 $fee_total += $fee_amount;
             }
