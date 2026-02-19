@@ -17,6 +17,7 @@ package-lock.json
 # Composer
 vendor/
 composer.lock
+.phpunit.result.cache
 
 # WordPress
 *.log
