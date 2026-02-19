@@ -300,6 +300,35 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     }
 
     /**
+     * Monta os dados do cliente para o payload.
+     *
+     * @param WC_Order $order Pedido.
+     * @return array|null Dados do cliente ou null.
+     */
+    private function build_customer( WC_Order $order ): ?array {
+        if ( ! $this->send_customer ) {
+            return null;
+        }
+
+        $name  = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
+        $email = $order->get_billing_email();
+        $phone = $this->format_phone_e164_br( (string) $order->get_billing_phone() );
+
+        $customer = array();
+        if ( $name ) {
+            $customer['name'] = $name;
+        }
+        if ( $email && is_email( $email ) ) {
+            $customer['email'] = $email;
+        }
+        if ( $phone ) {
+            $customer['phone_number'] = $phone;
+        }
+
+        return ! empty( $customer ) ? $customer : null;
+    }
+
+    /**
      * Monta o payload para a API de checkout links.
      *
      * @param WC_Order $order Pedido.
@@ -317,24 +346,9 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         );
 
         // Dados do cliente.
-        if ( $this->send_customer ) {
-            $name  = trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
-            $email = $order->get_billing_email();
-            $phone = $this->format_phone_e164_br( (string) $order->get_billing_phone() );
-
-            $customer = array();
-            if ( $name ) {
-                $customer['name'] = $name;
-            }
-            if ( $email && is_email( $email ) ) {
-                $customer['email'] = $email;
-            }
-            if ( $phone ) {
-                $customer['phone_number'] = $phone;
-            }
-            if ( ! empty( $customer ) ) {
-                $payload['customer'] = $customer;
-            }
+        $customer = $this->build_customer( $order );
+        if ( $customer ) {
+            $payload['customer'] = $customer;
         }
 
         // Endereço.
