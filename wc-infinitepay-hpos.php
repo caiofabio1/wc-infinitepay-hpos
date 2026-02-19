@@ -45,9 +45,7 @@ add_action( 'before_woocommerce_init', function () {
 /**
  * Inicializa o gateway após o WooCommerce carregar.
  */
-add_action( 'plugins_loaded', 'infinitepay_wc_init', 0 );
-
-function infinitepay_wc_init() {
+add_action( 'plugins_loaded', function () {
     if ( ! class_exists( 'WooCommerce' ) || ! class_exists( 'WC_Payment_Gateway' ) ) {
         add_action( 'admin_notices', function () {
             printf(
@@ -70,7 +68,7 @@ function infinitepay_wc_init() {
 
     // Registra endpoint REST do webhook.
     add_action( 'rest_api_init', array( 'InfinitePay_Webhook', 'register_routes' ) );
-}
+}, 0 );
 
 /**
  * Registra integração com WooCommerce Blocks Checkout.
