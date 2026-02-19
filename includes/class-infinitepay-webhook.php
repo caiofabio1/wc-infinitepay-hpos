@@ -90,7 +90,19 @@ class InfinitePay_Webhook {
             return false;
         }
 
-        set_transient( $key, $count + 1, MINUTE_IN_SECONDS );
+        // Optimization: prevent DB thrashing on non-persistent cache environments.
+        // If using object cache, set_transient is fast (memory).
+        if ( wp_using_ext_object_cache() ) {
+            set_transient( $key, $count + 1, MINUTE_IN_SECONDS );
+            return true;
+        }
+
+        if ( $count > 0 ) {
+            update_option( '_transient_' . $key, $count + 1 );
+        } else {
+            set_transient( $key, 1, MINUTE_IN_SECONDS );
+        }
+
         return true;
     }
 
