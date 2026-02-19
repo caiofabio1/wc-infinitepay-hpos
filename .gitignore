@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Node (if build tools added later)
+node_modules/
+package-lock.json
+
+# Composer
+vendor/
+composer.lock
+
+# WordPress
+*.log
+
+# Translation compiled files (keep .pot source)
+languages/*.mo
