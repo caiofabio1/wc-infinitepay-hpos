@@ -418,9 +418,9 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
         $last_error = null;
 
         for ( $attempt = 1; $attempt <= self::API_MAX_RETRIES; $attempt++ ) {
-            // Backoff: 0s na primeira, 1s na segunda.
+            // Backoff: 0s na primeira, 200ms na segunda.
             if ( $attempt > 1 ) {
-                sleep( $attempt - 1 );
+                usleep( ( $attempt - 1 ) * 200000 );
                 $this->log( sprintf( 'Retry %d/%d para criar checkout link.', $attempt, self::API_MAX_RETRIES ) );
             }
 
