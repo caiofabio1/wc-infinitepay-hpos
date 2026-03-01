@@ -58,10 +58,10 @@ class InfinitePay_Webhook {
     private static function validate_secret( WP_REST_Request $request, WC_Gateway_InfinitePay_HPOS $gateway ): bool {
         $configured_secret = $gateway->webhook_secret;
 
-        // Se não há secret configurado, loga aviso mas aceita (backward compat).
+        // Se não há secret configurado, loga aviso e rejeita (fail-closed security).
         if ( empty( $configured_secret ) ) {
-            $gateway->log( 'AVISO: Webhook secret não configurado. Todas as requisições serão aceitas.', 'warning' );
-            return true;
+            $gateway->log( 'AVISO: Webhook secret não configurado. Requisição rejeitada.', 'error' );
+            return false;
         }
 
         // Tenta X-Webhook-Secret primeiro, depois Authorization Bearer.
@@ -88,8 +88,11 @@ class InfinitePay_Webhook {
      * @return bool true se dentro do limite.
      */
     private static function check_rate_limit(): bool {
-        $ip  = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
-        $key = 'ip_wh_rl_' . md5( $ip );
+        // Usa WC_Geolocation::get_ip_address() para suportar proxies e X-Forwarded-For, com fallback.
+        $ip = class_exists( 'WC_Geolocation' ) ? \WC_Geolocation::get_ip_address() : ( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
+        $ip = sanitize_text_field( $ip );
+
+        $key   = 'ip_wh_rl_' . md5( $ip );
         $count = (int) get_transient( $key );
 
         if ( $count >= 30 ) {
@@ -150,20 +153,21 @@ class InfinitePay_Webhook {
     public static function handle( WP_REST_Request $request ): WP_REST_Response {
         $gateway = self::get_gateway();
 
-        // Rate limit.
-        if ( ! self::check_rate_limit() ) {
-            if ( $gateway ) {
-                $gateway->log( 'Webhook bloqueado: rate limit excedido.', 'warning' );
-            }
-            return new WP_REST_Response( array( 'success' => false, 'error' => 'rate_limit' ), 429 );
-        }
-
         if ( ! $gateway ) {
             return new WP_REST_Response( array( 'success' => false, 'error' => 'gateway_not_found' ), 500 );
         }
 
         // Validação do secret.
-        if ( ! self::validate_secret( $request, $gateway ) ) {
+        $is_valid_secret = self::validate_secret( $request, $gateway );
+
+        // Se o secret for inválido, aplica rate limit para evitar brute force.
+        // Se for válido, bypassa o rate limit (IPs compartilhados da InfinitePay).
+        if ( ! $is_valid_secret ) {
+            if ( ! self::check_rate_limit() ) {
+                $gateway->log( 'Webhook bloqueado: rate limit excedido.', 'warning' );
+                return new WP_REST_Response( array( 'success' => false, 'error' => 'rate_limit' ), 429 );
+            }
+
             $gateway->log( 'Webhook rejeitado: secret inválido.', 'error' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'unauthorized' ), 401 );
         }
