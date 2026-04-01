@@ -210,6 +210,19 @@ class InfinitePay_Webhook {
             return new WP_REST_Response( array( 'success' => true ), 200 );
         }
 
+        // Verificação ativa de segurança se o webhook secret não estiver configurado.
+        // Evita que webhooks forjados confirmem pedidos.
+        if ( empty( $gateway->webhook_secret ) ) {
+            $gateway->log( 'Webhook secret ausente. Verificando pagamento ativamente via API para segurança...' );
+            $check = $gateway->payment_check( (string) $order_nsu, $tx, $slug );
+
+            if ( ! $check['ok'] || ! $check['paid'] ) {
+                $gateway->log( 'Webhook rejeitado: verificação ativa falhou. Pagamento não confirmado na API.', 'error' );
+                return new WP_REST_Response( array( 'success' => false, 'error' => 'payment_not_verified' ), 403 );
+            }
+            $gateway->log( 'Verificação ativa bem-sucedida. Pagamento confirmado na API.' );
+        }
+
         // Confirma pagamento.
         // Define metadados ANTES de payment_complete(), pois ele chama save() internamente.
         $order->update_meta_data( '_infinitepay_slug', $slug );

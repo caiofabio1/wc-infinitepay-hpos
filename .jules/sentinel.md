@@ -1,0 +1,4 @@
+## 2024-05-24 - [CRITICAL] Webhook Forged Payment Confirmation
+**Vulnerability:** The webhook endpoint accepted payment confirmations without verifying the signature if the `webhook_secret` was empty. This allowed attackers to craft malicious webhook payloads and confirm any pending order by simply guessing the `order_nsu`.
+**Learning:** Payment gateway webhooks must always verify the authenticity of the payload. While allowing an empty secret might seem like a harmless fallback for poorly configured installations, it completely nullifies the security of the payment flow, effectively turning the webhook into an unauthenticated state-change endpoint.
+**Prevention:** If a shared secret is not configured, the plugin must actively poll the payment processor's API to verify the transaction status (via `payment_check`) before accepting the webhook's claim. This ensures a fail-secure fallback that prevents forged requests from manipulating order statuses.
