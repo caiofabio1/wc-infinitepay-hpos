@@ -58,10 +58,10 @@ class InfinitePay_Webhook {
     private static function validate_secret( WP_REST_Request $request, WC_Gateway_InfinitePay_HPOS $gateway ): bool {
         $configured_secret = $gateway->webhook_secret;
 
-        // Se não há secret configurado, loga aviso mas aceita (backward compat).
+        // Se não há secret configurado, rejeita a requisição por segurança.
         if ( empty( $configured_secret ) ) {
-            $gateway->log( 'AVISO: Webhook secret não configurado. Todas as requisições serão aceitas.', 'warning' );
-            return true;
+            $gateway->log( 'ERRO: Webhook secret não configurado. Requisição rejeitada por segurança.', 'error' );
+            return false;
         }
 
         // Tenta X-Webhook-Secret primeiro, depois Authorization Bearer.
