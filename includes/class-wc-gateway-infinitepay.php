@@ -556,7 +556,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
             $url = $this->create_checkout_link( $payload );
             if ( is_wp_error( $url ) ) {
-                throw new \Exception( $url->get_error_message() );
+                return $this->handle_payment_error( $order, $url->get_error_message() );
             }
 
             $order->update_status( 'on-hold', __( 'Aguardando pagamento InfinitePay.', 'wc-infinitepay-hpos' ) );
@@ -583,21 +583,37 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
                 'result'   => 'success',
                 'redirect' => $url,
             );
-        } catch ( \Exception $e ) {
-            $this->log( 'Erro no pedido #' . $order_id . ': ' . $e->getMessage(), 'error' );
-            $order->add_order_note(
-                sprintf(
-                    /* translators: %s: error message */
-                    __( 'Erro InfinitePay: %s', 'wc-infinitepay-hpos' ),
-                    $e->getMessage()
-                )
-            );
-            wc_add_notice(
-                __( 'Erro ao processar pagamento. Tente novamente.', 'wc-infinitepay-hpos' ),
-                'error'
-            );
-            return array( 'result' => 'failure' );
+        } catch ( \Throwable $e ) {
+            return $this->handle_payment_error( $order, $e->getMessage(), true );
         }
+    }
+
+    /**
+     * Centraliza o tratamento de erros de pagamento.
+     *
+     * @param WC_Order $order      Pedido.
+     * @param string   $message    Mensagem de erro.
+     * @param bool     $unexpected Se o erro foi inesperado (Exception/Throwable).
+     * @return array{result: 'failure'}
+     */
+    private function handle_payment_error( WC_Order $order, string $message, bool $unexpected = false ): array {
+        $prefix = $unexpected ? 'Erro inesperado' : 'Erro';
+        $this->log( sprintf( '%s no pedido #%s: %s', $prefix, $order->get_id(), $message ), 'error' );
+
+        $order->add_order_note(
+            sprintf(
+                /* translators: %s: error message */
+                __( 'Erro InfinitePay: %s', 'wc-infinitepay-hpos' ),
+                $message
+            )
+        );
+
+        wc_add_notice(
+            __( 'Erro ao processar pagamento. Tente novamente.', 'wc-infinitepay-hpos' ),
+            'error'
+        );
+
+        return array( 'result' => 'failure' );
     }
 
     /**
