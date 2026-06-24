@@ -47,6 +47,16 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     const MAX_DESCRIPTION_LENGTH = 200;
 
     /**
+     * Campos de cliente a serem omitidos nos logs.
+     */
+    private const REDACTED_CUSTOMER_FIELDS = array( 'name', 'email', 'phone_number', 'document' );
+
+    /**
+     * Campos de endereço a serem omitidos nos logs.
+     */
+    private const REDACTED_ADDRESS_FIELDS = array( 'cep', 'number', 'complement', 'street', 'neighborhood', 'city', 'state' );
+
+    /**
      * Propriedades declaradas para PHP 8.2+.
      */
     public string $handle         = '';
@@ -455,23 +465,46 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
     private function redact_payload( array $payload ): array {
         $redacted = $payload;
 
-        if ( isset( $redacted['customer'] ) ) {
-            foreach ( array( 'name', 'email', 'phone_number' ) as $field ) {
+        // Redact nested customer fields.
+        if ( isset( $redacted['customer'] ) && is_array( $redacted['customer'] ) ) {
+            foreach ( self::REDACTED_CUSTOMER_FIELDS as $field ) {
                 if ( isset( $redacted['customer'][ $field ] ) ) {
                     $redacted['customer'][ $field ] = '***';
                 }
             }
         }
 
-        if ( isset( $redacted['address'] ) ) {
-            foreach ( array( 'cep', 'number', 'complement' ) as $field ) {
+        // Redact nested address fields.
+        if ( isset( $redacted['address'] ) && is_array( $redacted['address'] ) ) {
+            foreach ( self::REDACTED_ADDRESS_FIELDS as $field ) {
                 if ( isset( $redacted['address'][ $field ] ) ) {
                     $redacted['address'][ $field ] = '***';
                 }
             }
         }
 
+        // Redact top-level PII fields (safety against flat payloads).
+        foreach ( array_merge( self::REDACTED_CUSTOMER_FIELDS, self::REDACTED_ADDRESS_FIELDS ) as $field ) {
+            if ( isset( $redacted[ $field ] ) && ! is_array( $redacted[ $field ] ) ) {
+                $redacted[ $field ] = '***';
+            }
+        }
+
         return $redacted;
+    }
+
+    /**
+     * Redacts PII from a JSON string.
+     *
+     * @param string $json JSON string to redact.
+     * @return string Redacted JSON string.
+     */
+    private function redact_json_string( string $json ): string {
+        $data = json_decode( $json, true );
+        if ( is_array( $data ) ) {
+            return wp_json_encode( $this->redact_payload( $data ) );
+        }
+        return $json;
     }
 
     /**
@@ -520,13 +553,13 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
 
             if ( $code < 200 || $code >= 300 ) {
                 // Erro do cliente (4xx) — não adianta retry.
-                $this->log( 'API retornou HTTP ' . $code . ': ' . $body, 'error' );
+                $this->log( 'API retornou HTTP ' . $code . ': ' . $this->redact_json_string( $body ), 'error' );
                 return new WP_Error( 'api_error', 'HTTP ' . $code );
             }
 
             $data = json_decode( $body, true );
             if ( ! is_array( $data ) || empty( $data['url'] ) ) {
-                $this->log( 'Resposta inesperada: ' . $body, 'error' );
+                $this->log( 'Resposta inesperada: ' . $this->redact_json_string( $body ), 'error' );
                 return new WP_Error( 'bad_response', __( 'URL de checkout não retornada pela API.', 'wc-infinitepay-hpos' ) );
             }
 
