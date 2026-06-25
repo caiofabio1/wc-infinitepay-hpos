@@ -23,7 +23,7 @@ final class InfinitePay_Blocks_Integration extends AbstractPaymentMethodType {
      *
      * @var string
      */
-    protected $name = WC_Gateway_InfinitePay_HPOS::ID;
+    protected $name = 'infinitepay_hpos';
 
     /**
      * Inicializa as configurações.
@@ -61,10 +61,6 @@ final class InfinitePay_Blocks_Integration extends AbstractPaymentMethodType {
             true
         );
 
-        wp_localize_script( 'wc-infinitepay-blocks', 'infinitepayBlocksConfig', array(
-            'gatewayId' => WC_Gateway_InfinitePay_HPOS::ID,
-        ) );
-
         return array( 'wc-infinitepay-blocks' );
     }
 
@@ -87,6 +83,7 @@ final class InfinitePay_Blocks_Integration extends AbstractPaymentMethodType {
             'title'       => $this->get_setting( 'title' ) ?? __( 'Cartão/Pix (InfinitePay)', 'wc-infinitepay-hpos' ),
             'description' => $this->get_setting( 'description' ) ?? __( 'Pague com segurança via InfinitePay.', 'wc-infinitepay-hpos' ),
             'supports'    => array( 'products' ),
+            'icon_url'    => plugins_url( 'assets/img/icon.svg', INFINITEPAY_WC_FILE ),
         );
     }
 }

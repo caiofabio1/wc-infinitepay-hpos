@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         failOnWarning="false"
+         failOnRisky="false"
+         beStrictAboutOutputDuringTests="false">
+    <testsuites>
+        <testsuite name="InfinitePay">
+            <file>tests/test-gateway-items.php</file>
+            <file>tests/test-redaction.php</file>
+            <file>tests/test-phone.php</file>
+            <file>tests/test-webhook-secret.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>

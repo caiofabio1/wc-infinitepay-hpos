@@ -126,7 +126,8 @@ Response: `{ "success": true, "paid": true }` or `{ "success": false, "paid": fa
 
 ## Testing Notes
 
-- No automated tests exist yet. Manual testing requires an InfinitePay account.
+- **Unit tests** live in `tests/` (PHPUnit, no WP/WC install needed — `tests/bootstrap.php` stubs the WP/WC surface). Run with `composer install && composer test` (or `phpunit`). CI runs them on PHP 7.4–8.3 via `.github/workflows/tests.yml`. Coverage: `build_items` totals/rounding, PII redaction (`redact_payload`/`redact_json_string`), phone E.164 formatting, and webhook secret validation (fail-closed).
+- Tests instantiate the gateway via `ReflectionClass::newInstanceWithoutConstructor()` and exercise private methods through reflection, so they don't need a running WordPress.
 - The InfinitePay API is public (no auth tokens for checkout links), authenticated only by the merchant `handle`.
 - Webhook testing can be done with tools like `curl` or Postman sending POST to the webhook URL.
 - For local development, use a tunnel (ngrok, Cloudflare Tunnel) so InfinitePay can reach the webhook.

@@ -11,6 +11,16 @@
  *
  * @package InfinitePay\WooCommerce
  * @since   4.0.0
+ * @updated 5.1.0 — IP detection para proxy/Cloudflare, sanitização order_nsu,
+ *                   tratamento de pagamento falho/cancelado.
+ * @updated 5.2.0 — log_critical() para eventos de segurança e pagamento
+ *                   (grava SEMPRE, independente do debug toggle).
+ * @updated 5.4.0 — Fail-closed sem secret configurado (rejeita em vez de
+ *                   aceitar), anti-replay atômico via object cache, constante
+ *                   REST_NAMESPACE e ID compartilhado com o gateway.
+ * @updated 5.5.0 — Valida secret ANTES do rate limit; requisições autenticadas
+ *                   bypassam o rate limit por IP (anti Denial-of-Wallet com IPs
+ *                   compartilhados da InfinitePay). Reconciliação Jules PR #22/#32.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -18,8 +28,9 @@ defined( 'ABSPATH' ) || exit;
 class InfinitePay_Webhook {
 
     /**
-     * Namespace da API REST.
-     * @var string
+     * Namespace REST do plugin.
+     *
+     * @since 5.4.0
      */
     const REST_NAMESPACE = 'wc-infinitepay/v1';
 
@@ -58,17 +69,18 @@ class InfinitePay_Webhook {
     private static function validate_secret( WP_REST_Request $request, WC_Gateway_InfinitePay_HPOS $gateway ): bool {
         $configured_secret = $gateway->webhook_secret;
 
-        // Se não há secret configurado, loga aviso mas aceita (backward compat).
+        // Fail-closed: sem secret configurado, REJEITA (não confirma pedidos sem
+        // autenticação). Configure o Webhook Secret no gateway e no painel InfinitePay.
         if ( empty( $configured_secret ) ) {
-            $gateway->log( 'AVISO: Webhook secret não configurado. Todas as requisições serão aceitas.', 'warning' );
-            return true;
+            $gateway->log_critical( 'SECURITY: Webhook rejeitado — secret não configurado. Configure o Webhook Secret para receber confirmações.', 'error' );
+            return false;
         }
 
         // Tenta X-Webhook-Secret primeiro, depois Authorization Bearer.
         $received = $request->get_header( 'X-Webhook-Secret' );
         if ( ! $received ) {
             $auth = $request->get_header( 'Authorization' );
-            if ( $auth && 0 === strpos( $auth, 'Bearer ' ) ) {
+            if ( $auth && str_starts_with( $auth, 'Bearer ' ) ) {
                 $received = substr( $auth, 7 );
             }
         }
@@ -81,15 +93,37 @@ class InfinitePay_Webhook {
     }
 
     /**
-     * Rate limiting simples por IP via transient.
+     * Detecta o IP real do cliente, considerando Cloudflare e reverse proxies.
+     *
+     * @since 5.1.0
+     *
+     * @return string IP do cliente.
+     */
+    private static function get_client_ip(): string {
+        // Cloudflare.
+        if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
+            return sanitize_text_field( $_SERVER['HTTP_CF_CONNECTING_IP'] );
+        }
+        // Reverse proxy genérico (primeiro IP da cadeia).
+        if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+            $ips = explode( ',', sanitize_text_field( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
+            return trim( $ips[0] );
+        }
+        // Conexão direta.
+        return sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
+    }
+
+    /**
+     * Rate limiting por IP via transient.
      *
      * Limita a 30 requests por minuto por IP.
+     * Usa detecção inteligente de IP real (Cloudflare/proxy).
      *
      * @return bool true se dentro do limite.
      */
     private static function check_rate_limit(): bool {
-        $ip  = sanitize_text_field( $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0' );
-        $key = 'ip_wh_rl_' . md5( $ip );
+        $ip    = self::get_client_ip();
+        $key   = 'ip_wh_rl_' . md5( $ip );
         $count = (int) get_transient( $key );
 
         if ( $count >= 30 ) {
@@ -108,6 +142,18 @@ class InfinitePay_Webhook {
      */
     private static function is_duplicate( string $tx ): bool {
         $key = 'ip_wh_tx_' . md5( $tx );
+
+        // Com object cache externo (Redis/Memcached), wp_cache_add é atômico:
+        // retorna false se a chave já existe, fechando a janela de corrida entre
+        // dois webhooks simultâneos com o mesmo transaction_nsu.
+        if ( wp_using_ext_object_cache() ) {
+            if ( false === wp_cache_add( $key, 1, 'infinitepay_replay', HOUR_IN_SECONDS ) ) {
+                return true;
+            }
+            return false;
+        }
+
+        // Fallback sem cache externo: transient (get/set não-atômico).
         if ( get_transient( $key ) ) {
             return true;
         }
@@ -149,39 +195,41 @@ class InfinitePay_Webhook {
      */
     public static function handle( WP_REST_Request $request ): WP_REST_Response {
         $gateway = self::get_gateway();
-
-        // Rate limit.
-        if ( ! self::check_rate_limit() ) {
-            if ( $gateway ) {
-                $gateway->log( 'Webhook bloqueado: rate limit excedido.', 'warning' );
-            }
-            return new WP_REST_Response( array( 'success' => false, 'error' => 'rate_limit' ), 429 );
-        }
-
         if ( ! $gateway ) {
             return new WP_REST_Response( array( 'success' => false, 'error' => 'gateway_not_found' ), 500 );
         }
 
-        // Validação do secret.
-        if ( ! self::validate_secret( $request, $gateway ) ) {
-            $gateway->log( 'Webhook rejeitado: secret inválido.', 'error' );
+        // Valida o secret PRIMEIRO (hash_equals, leve). Requisições autenticadas
+        // BYPASSAM o rate limit por IP — a InfinitePay usa IPs compartilhados e não
+        // pode ser bloqueada durante um flood (Denial-of-Wallet). O rate limit
+        // protege apenas requisições NÃO autenticadas (anti brute force).
+        // (reconciliação Jules PR #22/#32)
+        $is_valid_secret = self::validate_secret( $request, $gateway );
+
+        if ( ! $is_valid_secret ) {
+            if ( ! self::check_rate_limit() ) {
+                $gateway->log_critical( 'SECURITY: Webhook bloqueado — rate limit excedido. IP: ' . self::get_client_ip(), 'warning' );
+                return new WP_REST_Response( array( 'success' => false, 'error' => 'rate_limit' ), 429 );
+            }
+            $gateway->log_critical( 'SECURITY: Webhook rejeitado — secret inválido. IP: ' . self::get_client_ip(), 'error' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'unauthorized' ), 401 );
         }
 
         // Parse do body.
         $body = $request->get_json_params();
         if ( ! is_array( $body ) ) {
-            $gateway->log( 'Webhook rejeitado: body inválido.', 'error' );
+            $gateway->log_critical( 'SECURITY: Webhook rejeitado — body inválido. IP: ' . self::get_client_ip(), 'error' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'invalid_body' ), 400 );
         }
 
-        $order_nsu = isset( $body['order_nsu'] ) ? (string) $body['order_nsu'] : '';
+        $order_nsu = isset( $body['order_nsu'] ) ? absint( $body['order_nsu'] ) : 0;
         $tx        = isset( $body['transaction_nsu'] ) ? sanitize_text_field( $body['transaction_nsu'] ) : '';
         $slug      = isset( $body['invoice_slug'] ) ? sanitize_text_field( $body['invoice_slug'] ) : '';
         $receipt   = isset( $body['receipt_url'] ) ? esc_url_raw( $body['receipt_url'] ) : '';
+        $status    = isset( $body['status'] ) ? sanitize_text_field( $body['status'] ) : '';
 
         if ( ! $order_nsu || ! $tx || ! $slug ) {
-            $gateway->log( 'Webhook rejeitado: campos obrigatórios ausentes.', 'warning' );
+            $gateway->log_critical( 'Webhook rejeitado: campos obrigatórios ausentes. IP: ' . self::get_client_ip(), 'warning' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'missing_fields' ), 400 );
         }
 
@@ -192,15 +240,15 @@ class InfinitePay_Webhook {
         }
 
         // Busca o pedido.
-        $order = wc_get_order( (int) $order_nsu );
+        $order = wc_get_order( $order_nsu );
         if ( ! $order ) {
-            $gateway->log( 'Webhook: pedido #' . $order_nsu . ' não encontrado.', 'error' );
+            $gateway->log_critical( 'Webhook: pedido #' . $order_nsu . ' não encontrado. IP: ' . self::get_client_ip(), 'error' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'order_not_found' ), 404 );
         }
 
         // Valida que o pedido pertence a este gateway.
         if ( ! self::validate_order_ownership( $order ) ) {
-            $gateway->log( 'Webhook rejeitado: pedido #' . $order_nsu . ' não pertence ao gateway InfinitePay (method: ' . $order->get_payment_method() . ').', 'error' );
+            $gateway->log_critical( 'SECURITY: Webhook rejeitado — pedido #' . $order_nsu . ' não pertence ao gateway InfinitePay (method: ' . $order->get_payment_method() . '). IP: ' . self::get_client_ip(), 'error' );
             return new WP_REST_Response( array( 'success' => false, 'error' => 'order_mismatch' ), 403 );
         }
 
@@ -210,10 +258,42 @@ class InfinitePay_Webhook {
             return new WP_REST_Response( array( 'success' => true ), 200 );
         }
 
+        // Pagamento falho/cancelado? Marca pedido como failed.
+        if ( in_array( $status, array( 'failed', 'cancelled', 'expired', 'refunded', 'rejected' ), true ) ) {
+            $order->update_status(
+                'failed',
+                sprintf(
+                    /* translators: 1: payment status 2: transaction NSU */
+                    __( 'Pagamento %1$s via webhook InfinitePay. TX: %2$s', 'wc-infinitepay-hpos' ),
+                    $status,
+                    $tx
+                )
+            );
+            $order->delete_meta_data( '_infinitepay_pending' );
+            $order->save();
+
+            $gateway->log_critical( 'PAYMENT FAILED: pedido #' . $order_nsu . ' marcado como falho. Status recebido: ' . $status . '. TX: ' . $tx, 'warning' );
+
+            /**
+             * Dispara após um pagamento falho ser reportado via webhook.
+             *
+             * @since 5.1.0
+             *
+             * @param WC_Order $order  Pedido.
+             * @param string   $status Status recebido (failed, cancelled, expired, etc).
+             * @param array    $body   Dados completos do webhook.
+             */
+            do_action( 'infinitepay_webhook_payment_failed', $order, $status, $body );
+
+            return new WP_REST_Response( array( 'success' => true ), 200 );
+        }
+
         // Confirma pagamento.
-        // Define metadados ANTES de payment_complete(), pois ele chama save() internamente.
+        $order->payment_complete( $tx );
         $order->update_meta_data( '_infinitepay_slug', $slug );
         $order->delete_meta_data( '_infinitepay_pending' );
+        // Mark cart as safe to clear on next page load (session-based).
+        $order->update_meta_data( '_infinitepay_cart_cleared', 'yes' );
 
         if ( $receipt ) {
             $order->update_meta_data( '_infinitepay_receipt_url', $receipt );
@@ -226,11 +306,9 @@ class InfinitePay_Webhook {
                 $tx
             )
         );
+        $order->save();
 
-        // payment_complete() chama save() internamente, dispensando save() explícito.
-        $order->payment_complete( $tx );
-
-        $gateway->log( 'Webhook: pedido #' . $order_nsu . ' confirmado. TX: ' . $tx );
+        $gateway->log_critical( 'PAYMENT OK: pedido #' . $order_nsu . ' confirmado via webhook. TX: ' . $tx . '. Total: ' . $order->get_total() . ' ' . $order->get_currency() );
 
         /**
          * Dispara após a confirmação de pagamento via webhook.

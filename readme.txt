@@ -2,9 +2,9 @@
 Contributors: infinitepaywoo
 Tags: woocommerce, payment gateway, infinitepay, pix, cartão de crédito, brasil
 Requires at least: 6.0
-Tested up to: 6.7
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.0.0
+Stable tag: 5.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -88,6 +88,46 @@ Sim. Todas as propriedades são tipadas explicitamente, eliminando deprecation w
 
 == Changelog ==
 
+= 5.5.0 =
+* Privacidade/LGPD: Redação de PII (nome, e-mail, telefone, documento, endereço) nos logs de payload e de resposta da API — antes o payload era gravado em texto puro. (reconciliação Jules PR #38)
+* Segurança/confiabilidade: Webhook valida o secret ANTES do rate limit; requisições autenticadas bypassam o limite por IP — evita que IPs compartilhados da InfinitePay sejam bloqueados durante um flood (Denial-of-Wallet). (reconciliação Jules PR #22/#32)
+
+= 5.4.0 =
+* Segurança: Webhook agora REJEITA requisições quando o Webhook Secret não está configurado (fail-closed), em vez de aceitar. Configure o secret para receber confirmações.
+* Segurança: Anti-replay atômico via object cache (Redis/Memcached) quando disponível — fecha a janela de corrida entre webhooks simultâneos com a mesma transação.
+* Segurança: Validação de esquema HTTPS na URL de checkout retornada pela API (bloqueia esquemas forjados).
+* Fix: Guarda contra dupla-confirmação na página de obrigado (abas concorrentes ou corrida com o webhook) — relê o pedido antes de completar.
+* Refatoração: Constantes `ID` e `REST_NAMESPACE` eliminam strings mágicas e o risco de divergência.
+
+= 5.3.0 =
+* Novo: Página de transição com a marca da loja antes de redirecionar ao pagamento.
+* Novo: Página de obrigado com resumo do pedido, atualização automática (polling) do status e link de suporte por WhatsApp.
+* Melhoria: Carrinho esvaziado apenas APÓS a confirmação do pagamento (não antes) — cliente que fecha a aba sem pagar não perde o carrinho.
+* Melhoria: Descrição rica no checkout clássico (bandeiras de cartão, PIX, parcelamento, aviso de redirecionamento seguro).
+* Novo: `icon_url` no checkout por blocos.
+
+= 5.2.0 =
+* Novo: `log_critical()` — eventos críticos (pagamentos, erros de API, segurança) SEMPRE gravam no log, independente do toggle de debug
+* Novo: Endpoint REST `/wc-infinitepay/v1/audit` — diagnóstico remoto autenticado via WC API keys (config, cron, Action Scheduler, pedidos recentes, ambiente)
+* Melhoria: Webhook handler agora registra IP do cliente em todas as rejeições de segurança (rate limit, secret inválido, body inválido, order mismatch)
+* Melhoria: Cron de expiração agora SEMPRE loga cancelamentos (antes só com debug=yes)
+* Melhoria: `process_payment()` loga sucesso e falha na criação de checkout link
+* Melhoria: Logs de API incluem tentativa/total e código HTTP para debug mais rápido
+* Melhoria: Confirmação de pagamento (webhook e thankyou) inclui total e moeda no log
+
+= 5.1.0 =
+* Fix: Polyfill `str_starts_with()` para compatibilidade real com PHP 7.4
+* Fix: Detecção de IP real no rate limiting (suporte a Cloudflare e reverse proxy)
+* Fix: Sanitização de `order_nsu` no webhook com `absint()`
+* Novo: Auto-cancelamento de pedidos on-hold expirados via WP-Cron (configurável)
+* Novo: Tratamento de webhooks de pagamento falho/cancelado/expirado
+* Novo: Ícone de pagamento (cartão + pix) exibido no checkout
+* Novo: Desconto de cupom visível como line item no checkout InfinitePay
+* Novo: Campo "Expiração de pedidos" no admin (padrão: 48 horas, 0 para desativar)
+* Novo: Action `infinitepay_webhook_payment_failed` para pagamentos recusados
+* Novo: Filtro `infinitepay_gateway_icon` para customizar ícone do gateway
+* Melhoria: Limpeza do cron no `uninstall.php`
+
 = 5.0.0 =
 * Novo: Compatibilidade com WooCommerce Blocks Checkout
 * Novo: Itens detalhados no checkout InfinitePay (produtos + frete + taxas)
@@ -115,6 +155,18 @@ Sim. Todas as propriedades são tipadas explicitamente, eliminando deprecation w
 * Validação de secret com hash_equals (timing-safe)
 
 == Upgrade Notice ==
+
+= 5.5.0 =
+Privacidade e confiabilidade: redação de PII nos logs (LGPD) e webhook que prioriza autenticação sobre rate limit (evita bloquear confirmações legítimas da InfinitePay). Melhorias conciliadas das revisões automáticas (Jules).
+
+= 5.4.0 =
+Hardening de segurança do webhook: fail-closed sem secret, anti-replay atômico e validação HTTPS da URL de checkout. Inclui as melhorias de UX da 5.3.0 (página de transição, resumo na thankyou, carrinho preservado até o pagamento).
+
+= 5.2.0 =
+Observabilidade: eventos críticos (pagamentos, erros API, segurança) agora SEMPRE gravam no log WooCommerce, mesmo com debug desligado. Novo endpoint REST de auditoria para monitoramento remoto via API.
+
+= 5.1.0 =
+Correções de segurança: sanitização de input no webhook, detecção de IP real para Cloudflare/proxy, compatibilidade PHP 7.4. Novos recursos: auto-cancel de pedidos expirados, ícone no checkout, tratamento de pagamentos falhos.
 
 = 5.0.0 =
 Atualização recomendada. Inclui melhorias de segurança (validação de ownership no webhook), compatibilidade com Blocks Checkout, e itens detalhados no checkout InfinitePay.
