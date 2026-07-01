@@ -1,0 +1,4 @@
+## 2023-11-20 - Webhook IP Spoofing & Cache Collision Vulnerabilities
+**Vulnerability:** Rate limiter IP determination used `HTTP_CF_CONNECTING_IP` and `HTTP_X_FORWARDED_FOR` directly, which allowed attackers to spoof IPs and bypass webhook rate limiting. Additionally, MD5 was used for transient keys with concatenation without delimiters, making it vulnerable to key collisions.
+**Learning:** Default to `REMOTE_ADDR` and use `hash_equals` and secure hashes (like `sha256`) with delimiters to prevent spoofing and collisions, especially for critical payment confirmation operations.
+**Prevention:** Use a filter (e.g., `infinitepay_webhook_ip`) for proxy configurations instead of blindly trusting HTTP headers. Employ SHA-256 with structured input (using delimiters like `|`) for generating cache and transient keys to ensure uniqueness.
