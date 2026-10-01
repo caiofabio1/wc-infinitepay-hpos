@@ -123,7 +123,7 @@ class InfinitePay_Webhook {
      */
     private static function check_rate_limit(): bool {
         $ip    = self::get_client_ip();
-        $key   = 'ip_wh_rl_' . md5( $ip );
+        $key   = 'ip_wh_rl_' . hash( 'sha256', $ip );
         $count = (int) get_transient( $key );
 
         if ( $count >= 30 ) {
@@ -141,7 +141,7 @@ class InfinitePay_Webhook {
      * @return bool true se já processada.
      */
     private static function is_duplicate( string $tx ): bool {
-        $key = 'ip_wh_tx_' . md5( $tx );
+        $key = 'ip_wh_tx_' . hash( 'sha256', $tx );
 
         // Com object cache externo (Redis/Memcached), wp_cache_add é atômico:
         // retorna false se a chave já existe, fechando a janela de corrida entre

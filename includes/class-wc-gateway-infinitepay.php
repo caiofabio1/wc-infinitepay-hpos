@@ -909,7 +909,7 @@ class WC_Gateway_InfinitePay_HPOS extends WC_Payment_Gateway {
      * @return array{ok: bool, paid: bool}
      */
     private function verify_payment_cached( WC_Order $order, string $tx, string $slug ): array {
-        $cache_key = 'ip_check_' . $order->get_id() . '_' . md5( $tx . $slug );
+        $cache_key = 'ip_check_' . $order->get_id() . '_' . hash( 'sha256', $tx . '|' . $slug );
         $cached    = get_transient( $cache_key );
 
         if ( false !== $cached ) {
